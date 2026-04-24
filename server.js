@@ -108,6 +108,30 @@ app.post('/webhook', async (req, res) => {
             const session = sessions[chatId];
             fs.appendFileSync('webhook_debug.log', `[Server] State Before: chatId=${chatId}, Step=${session.step}, Retry=${session.retryCount || 0}\n`);
 
+            // --- 2.5 Notification to Group on First Contact ---
+            if (!session.firstContactNotified && config.HOT_LEADS_GROUP_ID) {
+                const pushName = body.data?.pushname || 'לקוח ללא שם';
+                const cleanPhone = chatId.split('@')[0].replace(/\D/g, '');
+                const formattedPhone = cleanPhone.startsWith('0') ? `972${cleanPhone.substring(1)}` : cleanPhone;
+                const waLink = `https://wa.me/${formattedPhone}`;
+
+                const notificationMsg = `🔔 *פנייה חדשה לבוט!* 🔔
+
+*שם בוואטסאפ*: ${pushName}
+*מספר טלפון*: ${waLink}
+
+הבוט התחיל לענות ללקוח. 🤖`;
+
+                try {
+                    console.log(`[Server] Sending first contact notification for ${chatId}...`);
+                    await ultraMsgService.sendMessage(config.HOT_LEADS_GROUP_ID, notificationMsg);
+                    session.firstContactNotified = true;
+                    saveSessions();
+                } catch (e) {
+                    console.error("[Server] First contact notification failed:", e);
+                }
+            }
+
             // 3. Concurrency Lock
             if (session.isProcessing) {
                 console.log(`[Webhook] Session ${chatId} is already processing. Rejecting retry.`);

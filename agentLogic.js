@@ -21,7 +21,8 @@ function createSession(phoneNumber) {
         status: 'active',
         completed: false,
         leadSent: false,        // שומר האם הליד כבר נשלח פעם אחת
-        lastMeetingTime: null   // שומר את זמן הפגישה האחרון שנשלח לקבוצה
+        lastMeetingTime: null,  // שומר את זמן הפגישה האחרון שנשלח לקבוצה
+        firstContactNotified: false // האם הודענו לקבוצה על הפנייה הראשונה
     };
 }
 
