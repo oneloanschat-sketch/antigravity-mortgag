@@ -106,7 +106,23 @@ PORT=3002
 
 ---
 
-## 🛠️ Local Development
+## 🛠️ Maintenance & Utility Tools
+
+The repository includes several utility scripts for configuration and maintenance:
+
+| Script | Purpose |
+|---|---|
+| `list_groups.js` | Lists all WhatsApp groups the bot is in (use to find `HOT_LEADS_GROUP_ID`) |
+| `find_group.js` | Search for a specific group by name |
+| `update_webhook.js` | Quickly update the UltraMsg webhook URL |
+| `list_models.js` | Checks available Gemini models and API connectivity |
+| `clear_sessions.js` | Clears all active chat sessions (useful for testing) |
+| `get_ultramsg_settings.js` | Verifies UltraMsg instance configuration |
+| `fix_and_start.js` | A recovery script that attempts to fix environment issues and start the server |
+
+---
+
+## 🚀 Local Development
 
 ```bash
 npm install
