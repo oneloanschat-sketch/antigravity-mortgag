@@ -51,7 +51,8 @@ async function processMessage(session, userMessage) {
     const now = new Date();
     const timeString = now.toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
     const dateString = now.toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' });
-    const dynamicSystemPrompt = systemPrompt.replace('__CURRENT_TIME__', dateString + ', ' + timeString);
+    const dayOfWeek = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', weekday: 'long' }).format(now);
+    const dynamicSystemPrompt = systemPrompt.replace('__CURRENT_TIME__', `${dayOfWeek}, ${dateString}, ${timeString}`);
     console.log(`[Agent] Sending to Gemini... History length: ${session.history.length}`);
     const aiResponseText = await geminiService.generateChatResponse(
         dynamicSystemPrompt,
