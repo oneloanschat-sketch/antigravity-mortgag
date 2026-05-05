@@ -61,8 +61,19 @@ app.post('/webhook', async (req, res) => {
                 }
 
                 chatId = body.data.from;
-                message = body.data.body;
                 msgId = body.data.id;
+
+                // Handle different message types
+                if (body.data.type === 'chat') {
+                    message = body.data.body;
+                } else if (['image', 'document', 'video', 'audio', 'voice'].includes(body.data.type)) {
+                    // For media, we inject a placeholder so the AI knows something was received
+                    const caption = body.data.caption ? ` [עם כיתוב: ${body.data.caption}]` : "";
+                    message = `(הלקוח שלח קובץ/מדיה מסוג ${body.data.type}${caption})`;
+                } else {
+                    console.log(`[Webhook] Unsupported message type: ${body.data.type}`);
+                    return res.status(200).send('Unsupported type');
+                }
 
                 // IMPORTANT: Ignore group messages — only respond to private (direct) chats
                 if (chatId && chatId.endsWith('@g.us')) {
