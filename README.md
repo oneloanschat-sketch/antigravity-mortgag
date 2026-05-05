@@ -14,9 +14,10 @@ She qualifies leads, schedules appointments, and notifies the sales team — all
 | 🎯 **Lead Qualification** | Collects name, city, amount, purpose, property details naturally |
 | 📅 **Appointment Scheduling** | Sapir sets the exact day, date & time — no "a rep will call to schedule" |
 | 🔥 **Hot Lead Notifications** | Sends formatted lead summary to WhatsApp group instantly |
+| 💰 **Small Loans Channel** | New! Accepts loans of 50K–199K NIS (no property needed) — collects docs, notifies separate group |
 | 🔄 **Smart Updates** | If user reschedules, sends an *update* notification (not a duplicate). Casual messages ("תודה") don't trigger notifications |
 | 🧠 **Thinking Disabled** | `thinkingBudget: 0` prevents costly thinking tokens + safety regex strips any THOUGHT leaks |
-| 🕐 **Time-Aware Greetings** | Injects real Israel time directly into prompt — says "ערב טוב" at night, not "בוקר טוב" |
+| 🔐 **Time-Aware Greetings** | Injects real Israel time directly into prompt — says "ערב טוב" at night, not "בוקר טוב" |
 | 🛡️ **Clean Chat** | JSON payloads are 100% hidden from the client |
 | 🔇 **Group Silence** | Bot ignores all group messages — responds only to private (direct) chats |
 
@@ -33,10 +34,12 @@ User (WhatsApp) → UltraMsg Webhook → server.js → agentLogic.js → Gemini 
                                           ↓
                                   Hidden JSON detected?
                                   ↓ YES              ↓ NO
-                        New lead or time changed?   Reply to user
-                        ↓ YES         ↓ NO
-                   Send to Group   Skip (no duplicate)
-                   + Reply clean   + Reply clean
+                       lead_type = mortgage?    Reply to user
+                       ↓ YES        ↓ NO (small_loan)
+              New lead/time changed?  Send to 🔥 הלוואות קטנות group
+              ↓ YES         ↓ NO
+         Send to Group   Skip (no duplicate)
+         + Reply clean   + Reply clean
 ```
 
 ### Core Files
@@ -60,7 +63,8 @@ Create a `.env` file with the following variables:
 GEMINI_API_KEY=your_gemini_api_key
 ULTRAMSG_INSTANCE_ID=your_instance_id
 ULTRAMSG_TOKEN=your_token
-HOT_LEADS_GROUP_ID=your_group_id@g.us
+HOT_LEADS_GROUP_ID=your_hot_leads_group_id@g.us
+SMALL_LOANS_GROUP_ID=your_small_loans_group_id@g.us
 PORT=3002
 ```
 
@@ -70,11 +74,29 @@ PORT=3002
 
 1. **User messages** the bot on WhatsApp (private chat only — groups are ignored).
 2. **Sapir responds** naturally in Hebrew, collecting info one question at a time.
-3. **Meeting scheduled** — Sapir sets a specific day, date & time with the user.
-4. **Hidden JSON** — The AI outputs a structured payload after the friendly closing message.
-5. **Server detects** the JSON, strips it from the user's view, and sends a formatted 🔥 notification to the **Hot Leads** WhatsApp group.
+3. **Amount routing:**
+   - **≥ 200,000 NIS** → Mortgage track: sets a meeting, notifies the "🔥 לידים חמים" group.
+   - **50,001–199,999 NIS** → Small loans track: collects ID, bank statements, pay slips/tax assessment, notifies the "🔥 הלוואות קטנות" group.
+   - **≤ 50,000 NIS** → Politely declined.
+4. **Hidden JSON** — The AI outputs a structured payload (with `lead_type: mortgage` or `lead_type: small_loan`) after the friendly closing message.
+5. **Server detects** the JSON, strips it from the user’s view, and routes to the correct WhatsApp group.
 6. **User continues** — The conversation stays open. Casual messages get natural replies without triggering notifications.
-7. **Reschedule** — If the user explicitly changes the meeting time, a 🔄 update notification is sent to the group.
+7. **Reschedule** (mortgage only) — If the user explicitly changes the meeting time, a 🔄 update notification is sent to the group.
+
+---
+
+## 💰 Small Loans Group Message Format
+
+```
+💰 *בקשת הלוואה קטנה חדשה!* 💰
+
+*שם*: ישראל ישראלי
+*טלפון*: wa.me/972501234567
+*פרטים*: לקוח ישראל. מבקש 120,000 ש"ח למטרת שיפוצ. שכיר. שלח את כל המסמכים.
+
+✅ הלקוח שלח את כל המסמכים הנדרשים.
+*נא לבחון את הבקשה בהקדם!* 🚀
+```
 
 ---
 
@@ -145,3 +167,4 @@ node server.js
 - **Model fallback:** If Gemini 2.5 Flash is unavailable, the system retries 10 times (≈45s) before falling back to 2.0 Flash.
 - **Thinking disabled:** `thinkingBudget: 0` in `geminiService.js` prevents THOUGHT token generation and reduces API costs.
 - **Group filter:** `server.js` skips all messages from `@g.us` addresses — the bot only responds to private chats.
+- **Two group IDs required:** `HOT_LEADS_GROUP_ID` for mortgage leads (≥200K), `SMALL_LOANS_GROUP_ID` for small loan leads (50K–199K). Both must be set in `.env`.

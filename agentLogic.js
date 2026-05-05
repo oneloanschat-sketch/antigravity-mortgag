@@ -22,7 +22,9 @@ function createSession(phoneNumber) {
         completed: false,
         leadSent: false,        // שומר האם הליד כבר נשלח פעם אחת
         lastMeetingTime: null,  // שומר את זמן הפגישה האחרון שנשלח לקבוצה
-        firstContactNotified: false // האם הודענו לקבוצה על הפנייה הראשונה
+        firstContactNotified: false, // האם הודענו לקבוצה על הפנייה הראשונה
+        lastBotMessageTime: null,    // זמן שליחת ההודעה האחרונה של הבוט
+        reminderSent: false          // האם נשלחה כבר תזכורת לליד
     };
 }
 
@@ -79,46 +81,60 @@ async function processMessage(session, userMessage) {
     const leadSummary = geminiService.extractJson(aiResponseText);
 
     if (leadSummary) {
-        console.log(`[Agent] valid JSON found!`);
+        console.log(`[Agent] valid JSON found! lead_type=${leadSummary.lead_type || 'mortgage'}`);
 
-        // חילוץ מועד הפגישה מה-JSON
-        const timeKey = Object.keys(leadSummary).find(k => k.includes('time') || k.includes('moed') || k.includes('זמן') || k.includes('שעה') || k.includes('meeting'));
-        const meetingTime = timeKey ? leadSummary[timeKey] : 'לא צוין';
-
-        // בדיקה: האם לשלוח הודעה לקבוצה? (רק אם ליד חדש או שהמועד באמת השתנה)
-        const isNewLead = !session.leadSent;
-        // Normalize both strings for comparison (remove extra spaces, punctuation)
-        const normalize = (s) => (s || '').replace(/[\s.,!?:]+/g, ' ').trim().toLowerCase();
-        const isTimeChanged = session.leadSent && normalize(session.lastMeetingTime) !== normalize(meetingTime);
-
-        console.log(`[Agent] Lead check: isNew=${isNewLead}, timeChanged=${isTimeChanged}, old="${session.lastMeetingTime}", new="${meetingTime}"`);
-
-        if (isNewLead || isTimeChanged) {
-            if (config.HOT_LEADS_GROUP_ID) {
-                // חילוץ שם
+        // --- הלוואה קטנה: שלח לקבוצת "טיקטק 🔥 הלוואות קטנות 🔥" ---
+        if (leadSummary.lead_type === 'small_loan') {
+            if (!session.leadSent && config.SMALL_LOANS_GROUP_ID) {
                 const fullNameKey = Object.keys(leadSummary).find(k => k.includes('name') || k.includes('שם'));
                 const fullName = fullNameKey ? leadSummary[fullNameKey] : (session.data.full_name || 'לקוח');
-
-                // חילוץ סיכום/פרטים
-                const summaryKey = Object.keys(leadSummary).find(k => k.includes('summary') || k.includes('sentence') || k.includes('פרטים'));
-                let details = summaryKey ? leadSummary[summaryKey] : '';
-
-                if (!details) {
-                    const city = session.data.city || leadSummary['city'] || leadSummary['City of Residence'] || 'לא ידוע';
-                    const amount = session.data.amount || leadSummary['amount'] || leadSummary['Amount Requested'] || 'לא ידוע';
-                    const purpose = session.data.purpose || leadSummary['purpose'] || leadSummary['Purpose of Loan'] || 'לא ידוע';
-                    details = `לקוח ${fullName}, גר ב${city}. מבקש ${amount} למטרת ${purpose}.`;
-                }
-
-                // פורמט טלפון ולינק לוואטסאפ
+                const summaryKey = Object.keys(leadSummary).find(k => k.includes('summary') || k.includes('sentence'));
+                const details = summaryKey ? leadSummary[summaryKey] : `לקוח ${fullName}.`;
                 const cleanPhone = session.phone_number.split('@')[0].replace(/\D/g, '');
                 const formattedPhone = cleanPhone.startsWith('0') ? `972${cleanPhone.substring(1)}` : cleanPhone;
                 const waLink = `wa.me/${formattedPhone}`;
+                const groupMessage = `💰 *בקשת הלוואה קטנה חדשה!* 💰
 
-                // בחירת כותרת (חדש או עדכון)
-                const emojiHeader = isNewLead ? "🔥 *ליד חם חדש (אש)!* 🔥" : "🔄 *עדכון מועד פגישה* 🔄";
+*שם*: ${fullName}
+*טלפון*: ${waLink}
+*פרטים*: ${details}
 
-                const groupMessage = `${emojiHeader}
+✅ הלקוח שלח את כל המסמכים הנדרשים.
+*נא לבחון את הבקשה בהקדם!* 🚀`;
+                try {
+                    const ultraMsgService = require('./ultraMsgService');
+                    ultraMsgService.sendMessage(config.SMALL_LOANS_GROUP_ID, groupMessage);
+                    session.leadSent = true;
+                } catch (e) {
+                    console.error("[Agent] Small loan group notification failed:", e);
+                }
+            }
+
+        // --- משכנתא: לוגיקה מקורית ללא שינוי ---
+        } else {
+            const timeKey = Object.keys(leadSummary).find(k => k.includes('time') || k.includes('moed') || k.includes('זמן') || k.includes('שעה') || k.includes('meeting'));
+            const meetingTime = timeKey ? leadSummary[timeKey] : 'לא צוין';
+            const isNewLead = !session.leadSent;
+            const normalize = (s) => (s || '').replace(/[\s.,!?:]+/g, ' ').trim().toLowerCase();
+            const isTimeChanged = session.leadSent && normalize(session.lastMeetingTime) !== normalize(meetingTime);
+            console.log(`[Agent] Lead check: isNew=${isNewLead}, timeChanged=${isTimeChanged}, old="${session.lastMeetingTime}", new="${meetingTime}"`);
+            if (isNewLead || isTimeChanged) {
+                if (config.HOT_LEADS_GROUP_ID) {
+                    const fullNameKey = Object.keys(leadSummary).find(k => k.includes('name') || k.includes('שם'));
+                    const fullName = fullNameKey ? leadSummary[fullNameKey] : (session.data.full_name || 'לקוח');
+                    const summaryKey = Object.keys(leadSummary).find(k => k.includes('summary') || k.includes('sentence') || k.includes('פרטים'));
+                    let details = summaryKey ? leadSummary[summaryKey] : '';
+                    if (!details) {
+                        const city = session.data.city || leadSummary['city'] || leadSummary['City of Residence'] || 'לא ידוע';
+                        const amount = session.data.amount || leadSummary['amount'] || leadSummary['Amount Requested'] || 'לא ידוע';
+                        const purpose = session.data.purpose || leadSummary['purpose'] || leadSummary['Purpose of Loan'] || 'לא ידוע';
+                        details = `לקוח ${fullName}, גר ב${city}. מבקש ${amount} למטרת ${purpose}.`;
+                    }
+                    const cleanPhone = session.phone_number.split('@')[0].replace(/\D/g, '');
+                    const formattedPhone = cleanPhone.startsWith('0') ? `972${cleanPhone.substring(1)}` : cleanPhone;
+                    const waLink = `wa.me/${formattedPhone}`;
+                    const emojiHeader = isNewLead ? "🔥 *ליד חם חדש (אש)!* 🔥" : "🔄 *עדכון מועד פגישה* 🔄";
+                    const groupMessage = `${emojiHeader}
 
 *שם*: ${fullName}
 *טלפון*: ${waLink}
@@ -126,16 +142,14 @@ async function processMessage(session, userMessage) {
 *מועד פגישה*: ${meetingTime}
 
 ${isNewLead ? '*סוכן, נא לחזור אל הלקוח!* 🚀' : '*סוכן, נא לעדכן ביומן!* 📅'}`;
-
-                try {
-                    const ultraMsgService = require('./ultraMsgService');
-                    ultraMsgService.sendMessage(config.HOT_LEADS_GROUP_ID, groupMessage);
-
-                    // עדכון מצב הסשן כדי למנוע כפילויות
-                    session.leadSent = true;
-                    session.lastMeetingTime = meetingTime;
-                } catch (e) {
-                    console.error("[Agent] Group notification failed:", e);
+                    try {
+                        const ultraMsgService = require('./ultraMsgService');
+                        ultraMsgService.sendMessage(config.HOT_LEADS_GROUP_ID, groupMessage);
+                        session.leadSent = true;
+                        session.lastMeetingTime = meetingTime;
+                    } catch (e) {
+                        console.error("[Agent] Group notification failed:", e);
+                    }
                 }
             }
         }

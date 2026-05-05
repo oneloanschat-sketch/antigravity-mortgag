@@ -7,4 +7,5 @@ module.exports = {
     ULTRAMSG_TOKEN: process.env.ULTRAMSG_TOKEN,
     ULTRAMSG_API_URL: `https://api.ultramsg.com/${process.env.ULTRAMSG_INSTANCE_ID}/`,
     HOT_LEADS_GROUP_ID: process.env.HOT_LEADS_GROUP_ID,
+    SMALL_LOANS_GROUP_ID: process.env.SMALL_LOANS_GROUP_ID,
 };

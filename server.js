@@ -152,6 +152,9 @@ app.post('/webhook', async (req, res) => {
                 if (result.response) {
                     console.log(`[Webhook] Sending response to ${chatId}...`);
                     await ultraMsgService.sendMessage(chatId, result.response);
+                    // Update last bot message time for reminder logic
+                    session.lastBotMessageTime = Date.now();
+                    saveSessions();
                 }
             } finally {
                 session.isProcessing = false;
@@ -182,3 +185,45 @@ app.post('/reset', (req, res) => {
 app.listen(config.PORT, () => {
     console.log(`Server running on port ${config.PORT}`);
 });
+
+// --- Reminder Logic (Runs every hour) ---
+setInterval(async () => {
+    console.log('[Reminder] Checking for idle sessions...');
+    const now = Date.now();
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
+
+    for (const chatId in sessions) {
+        const session = sessions[chatId];
+
+        // Check if session qualifies for a reminder:
+        // 1. Not completed
+        // 2. Reminder not yet sent
+        // 3. Has history and last message was from bot (assistant)
+        // 4. Last bot message was between 24h and 14 days ago
+        if (
+            !session.completed &&
+            !session.reminderSent &&
+            session.history &&
+            session.history.length > 0 &&
+            session.history[session.history.length - 1].role === 'assistant' &&
+            session.lastBotMessageTime &&
+            (now - session.lastBotMessageTime) > TWENTY_FOUR_HOURS &&
+            (now - session.lastBotMessageTime) < TWO_WEEKS
+        ) {
+            console.log(`[Reminder] Sending reminder to ${chatId}`);
+            const reminderMsg = "היי, מה נשמע? רציתי לראות אם אפשר להתקדם עם מה שדיברנו עליו, חבל לפספס את ההזדמנות. אני כאן לכל שאלה! 😊";
+
+            try {
+                await ultraMsgService.sendMessage(chatId, reminderMsg);
+                session.reminderSent = true;
+                // Add to history so AI has context if user replies
+                session.history.push({ role: 'assistant', content: reminderMsg });
+                session.lastBotMessageTime = Date.now(); // Update time to prevent immediate double-reminders (though flag handles it)
+                saveSessions();
+            } catch (err) {
+                console.error(`[Reminder] Failed to send to ${chatId}:`, err.message);
+            }
+        }
+    }
+}, 60 * 60 * 1000); // Check every hour
