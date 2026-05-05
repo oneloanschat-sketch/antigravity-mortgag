@@ -163,7 +163,9 @@ ${isNewLead ? '*סוכן, נא לחזור אל הלקוח!* 🚀' : '*סוכן, 
         finalResponse = finalResponse.replace(/```json[\s\S]*?```/g, "");
         finalResponse = finalResponse.replace(/\bjson\b/gi, "");
         finalResponse = finalResponse.replace(/\|\|\|json_start\|\|\|/g, "");
-
+        // Clean up internal system media markers if AI echoes them
+        finalResponse = finalResponse.replace(/\(הלקוח שלח קובץ\/מדיה מסוג.*?\)/g, "");
+        
         const firstBraceIndex = finalResponse.indexOf('{');
         if (firstBraceIndex !== -1) {
             finalResponse = finalResponse.substring(0, firstBraceIndex);
