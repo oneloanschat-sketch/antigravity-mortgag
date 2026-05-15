@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>הסכם התקשרות דיגיטלי - אדמתנו</title>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-dark: #1e40af;
+            --primary-light: #3b82f6;
+            --bg-body: #f1f5f9;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Assistant', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        .document-container {
+            width: 100%;
+            max-width: 800px;
+            background: #ffffff;
+            padding: 40px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            position: relative;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .doc-header {
+            text-align: center;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .doc-header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: var(--primary);
+            letter-spacing: 1px;
+        }
+
+        .doc-header p {
+            margin: 10px 0 0;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .legal-metadata {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+
+        .legal-metadata div span {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .user-inputs {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+
+        .input-group input:focus {
+            outline: 2px solid var(--primary-light);
+            border-color: transparent;
+        }
+
+        .agreement-content {
+            font-size: 16px;
+            line-height: 1.8;
+            text-align: right;
+            unicode-bidi: plaintext;
+            margin-bottom: 40px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-left: 15px;
+            border-right: 4px solid var(--primary-light);
+            padding-right: 15px;
+            white-space: pre-wrap;
+        }
+
+        .agreement-content::-webkit-scrollbar { width: 5px; }
+        .agreement-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+
+        .signature-area {
+            margin-top: 30px;
+        }
+
+        .signature-canvas-box {
+            width: 100%;
+            height: 180px;
+            background: #fdfdfd;
+            border: 1px solid #94a3b8;
+            border-radius: 4px;
+            position: relative;
+            cursor: crosshair;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .signature-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .clear-btn {
+            background: none;
+            border: none;
+            color: var(--primary-light);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 6px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: background 0.3s;
+        }
+
+        .submit-btn:hover { background: var(--primary-dark); }
+        .submit-btn:disabled { background: #94a3b8; }
+
+        .success-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .document-container { padding: 20px; }
+            .legal-metadata { grid-template-columns: 1fr; }
+            .doc-header h1 { font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="document-container" id="mainDoc">
+    <div class="doc-header">
+        <p style="margin: 0 0 10px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">חתימה דיגיטלית</p>
+        <h1>אדמתנו ביתנו בע"מ</h1>
+        <p style="margin-top: 5px; font-weight: 600; color: var(--primary);">משכנתאות I הלוואות I פתרונות מימון לעסקים</p>
+        <h3 style="margin-top: 20px; text-decoration: underline;">הנדון: הסכם התקשרות</h3>
+    </div>
+
+    <div class="legal-metadata">
+        <div><span>תאריך:</span> <span id="currentDate">--/--/----</span></div>
+        <div><span>שעה:</span> <span id="currentTime">--:--</span></div>
+    </div>
+
+    <div class="user-inputs">
+        <div class="input-group">
+            <label>שם מלא של הלקוח/ה:</label>
+            <input type="text" id="fullName" placeholder="הכנס שם כפי שמופיע בתעודת הזהות">
+        </div>
+        <div class="input-group">
+            <label>מספר תעודת זהות:</label>
+            <input type="text" id="idNumber" inputmode="numeric" placeholder="9 ספרות" pattern="[0-9]*">
+        </div>
+    </div>
+
+    <div class="agreement-content">
+1. אני מבקש/ת את סיוע החברה בקבלת אישור עקרוני להלוואה.
+2. ידוע לי כי שכר הטרחה בגין קבלת האישור הינו 9% (כולל מע"מ) מסך ההלוואה שאושרה, והוא ישולם לחברה עם קבלת האישור.
+3. אני מצהיר/ה כי כל המידע שמסרתי הוא נכון ומדויק.
+4. ידוע לי כי החברה אינה מתחייבת להצלחה בקבלת האישור וכי ההחלטה הסופית היא בידי הגורם המממן.
+5. חתימתי באמצעי דיגיטלי זה מחייבת אותי לכל דבר ועניין ומהווה הסכמה מלאה לכל תנאי ההתקשרות לעיל.
+    </div>
+
+    <div class="signature-area">
+        <label style="font-weight: 700; margin-bottom: 10px; display: block;">חתימת הלקוח/ה:</label>
+        <div class="signature-canvas-box">
+            <canvas id="signature-pad"></canvas>
+        </div>
+        <div class="signature-footer">
+            <button class="clear-btn" id="clearBtn">נקה חתימה</button>
+            <span style="font-size: 11px; color: #94a3b8;">חתימה אלקטרונית מאובטחת</span>
+        </div>
+    </div>
+
+    <button class="submit-btn" id="submitBtn">חתימה ואישור ההסכם</button>
+</div>
+
+<div class="success-overlay" id="successOverlay">
+    <div style="font-size: 80px; color: #22c55e;">✓</div>
+    <h1 style="color: var(--primary);">ההסכם נחתם בהצלחה</h1>
+    <p>עותק נשלח למערכת. ניתן לסגור חלון זה.</p>
+</div>
+
+<script>
+    // Metadata detection
+    const now = new Date();
+    document.getElementById('currentDate').innerText = now.toLocaleDateString('he-IL');
+    document.getElementById('currentTime').innerText = now.toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'});
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const pathParts = window.location.pathname.split('/');
+    const chatId = pathParts[pathParts.length - 1];
+    let userIp = 'Detecting...';
+
+    // IP Detection (Optional but recommended)
+    fetch('https://api.ipify.org?format=json')
+        .then(res => res.json())
+        .then(data => userIp = data.ip)
+        .catch(() => userIp = 'Local/Hidden');
+
+    const canvas = document.getElementById('signature-pad');
+    const signaturePad = new SignaturePad(canvas, {
+        backgroundColor: 'rgba(255, 255, 255, 0)',
+        penColor: 'rgb(15, 23, 42)'
+    });
+
+    function resizeCanvas() {
+        const ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        signaturePad.clear();
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    document.getElementById('clearBtn').addEventListener('click', () => signaturePad.clear());
+
+    document.getElementById('submitBtn').addEventListener('click', async () => {
+        const name = document.getElementById('fullName').value.trim();
+        const id = document.getElementById('idNumber').value.trim();
+
+        if (!name || name.length < 3) {
+            alert('אנא הזן שם מלא תקין');
+            return;
+        }
+        if (!id || id.length < 9) {
+            alert('אנא הזן מספר תעודת זהות תקין (9 ספרות)');
+            return;
+        }
+        if (signaturePad.isEmpty()) {
+            alert('אנא חתום בתיבה לפני השליחה');
+            return;
+        }
+
+        const submitBtn = document.getElementById('submitBtn');
+        submitBtn.disabled = true;
+        submitBtn.innerText = 'שולח חתימה...';
+
+        try {
+            const response = await fetch('/api/sign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chatId: chatId,
+                    name: name,
+                    idNumber: id,
+                    userAgent: navigator.userAgent,
+                    signature: signaturePad.toDataURL()
+                })
+            });
+
+            if (response.ok) {
+                document.getElementById('mainDoc').style.display = 'none';
+                document.getElementById('successOverlay').style.display = 'flex';
+            } else {
+                throw new Error('Failure');
+            }
+        } catch (e) {
+            alert('שגיאה בשליחת החתימה. נסה שוב.');
+            submitBtn.disabled = false;
+            submitBtn.innerText = 'חתימה ואישור ההסכם';
+        }
+    });
+</script>
+
+</body>
+</html>

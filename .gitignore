@@ -4,3 +4,5 @@ sessions.json
 webhook_debug.log
 *.log
 .DS_Store
+*.pdf
+generate_sample.js

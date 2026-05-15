@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const agentLogic = require('./agentLogic');
 const config = require('./config');
 const ultraMsgService = require('./ultraMsgService');
+const pdfService = require('./pdfService');
 
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +11,7 @@ const path = require('path');
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Persistent session storage
 const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
@@ -30,6 +32,132 @@ function saveSessions() {
         console.error("[Server] Error saving sessions file:", err);
     }
 }
+
+// Digital Signature Routes
+app.get('/sign/:chatId', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'signature.html'));
+});
+
+app.get('/view-contract/:chatId', (req, res) => {
+    const { chatId } = req.params;
+    const session = sessions[chatId];
+
+    if (!session || !session.agreementSigned) {
+        return res.status(404).send("<h1>הסכם לא נמצא</h1><p>נראה שהלקוח טרם חתם על ההסכם או שהקישור אינו תקין.</p>");
+    }
+
+    const name = session.clientName || "לא הוזן";
+    const id = session.clientIdNumber || "לא הוזן";
+    const date = new Date(session.lastSignatureTime).toLocaleDateString('he-IL');
+    const time = new Date(session.lastSignatureTime).toLocaleTimeString('he-IL', {hour: '2-digit', minute:'2-digit'});
+    const sigImage = session.signatureData;
+    const sigId = "---";
+
+    const { getContractHtml } = require('./contractTemplate');
+    const html = getContractHtml(name, id, date, time, sigImage);
+    
+    // Add print button only to the web view (not the PDF version)
+    const webHtml = html.replace('</body>', `
+        <div style="text-align: center; margin-bottom: 50px;">
+            <a href="javascript:window.print()" class="btn-print" style="display: inline-block; width: 200px; padding: 12px; background: #1e3a8a; color: white; text-align: center; text-decoration: none; border-radius: 5px; font-weight: 700; cursor: pointer;">הדפס / שמור כ-PDF</a>
+        </div>
+    </body>`);
+    
+    res.send(webHtml);
+});
+
+// Route for local testing: view the last generated PDF in browser
+app.get('/test-pdf', (req, res) => {
+    const pdfPath = path.join(__dirname, 'last_signed_contract.pdf');
+    if (fs.existsSync(pdfPath)) {
+        res.contentType("application/pdf");
+        res.sendFile(pdfPath);
+    } else {
+        res.status(404).send("<h1>קובץ לא נמצא</h1><p>עליך לחתום על חוזה קודם כדי לייצר את הקובץ.</p>");
+    }
+});
+
+app.post('/api/sign', async (req, res) => {
+    const { chatId, signature, name, idNumber, userAgent } = req.body;
+    console.log(`[Signature] Received signature for ${chatId}`);
+
+    if (sessions[chatId] || chatId === 'test_user') {
+        // For testing purposes, create a dummy session for test_user if it doesn't exist
+        if (chatId === 'test_user' && !sessions[chatId]) {
+            sessions[chatId] = {
+                history: [],
+                data: { full_name: 'לקוח בדיקה' },
+                lastActivity: Date.now()
+            };
+        }
+
+        if (sessions[chatId]) {
+            const session = sessions[chatId];
+            session.agreementSigned = true;
+            session.signatureData = signature;
+            session.clientName = name;
+            session.clientIdNumber = idNumber;
+            session.clientUserAgent = userAgent;
+            session.lastSignatureTime = Date.now();
+            
+            // Inject a system message so the AI knows the signature was received
+            const signatureMsg = `(המערכת: הלקוח ${name || ""} חתם דיגיטלית על ההסכם)`;
+            const result = await agentLogic.processMessage(session, signatureMsg);
+            
+            sessions[chatId] = result.session;
+            saveSessions();
+
+            // Send AI's reaction to the signature
+            try {
+                if (result.response) {
+                    await ultraMsgService.sendMessage(chatId, result.response);
+                }
+            } catch (e) {
+                console.error("[Signature] Failed to send AI response to client:", e.message);
+            }
+
+            // Notify Group about signature
+            try {
+                if (config.SMALL_LOANS_GROUP_ID) {
+                    const pushName = name || session.data?.full_name || 'לקוח';
+                    const cleanPhone = chatId.split('@')[0].replace(/\D/g, '');
+                    const waLink = `https://wa.me/${cleanPhone}`;
+                    const viewLink = `${config.BASE_URL}/view-contract/${chatId}`;
+                    
+                    await ultraMsgService.sendMessage(config.SMALL_LOANS_GROUP_ID, `✍️ *הסכם נחתם דיגיטלית!* ✍️\n\n*לקוח*: ${pushName}\n*ת.ז*: ${idNumber || "---"}\n*טלפון*: ${waLink}\n\n📄 *לצפייה בהסכם החתום והדפסה*:\n${viewLink}`);
+                }
+            } catch (e) {
+                console.error("[Signature] Failed to notify group via WhatsApp:", e.message);
+            }
+
+            // Generate PDF and send to WhatsApp Group
+            try {
+                const pdfBuffer = await pdfService.generateContractPdf(name, idNumber, signature);
+                
+                // Local testing: Save a copy to disk
+                if (pdfBuffer) {
+                    const fs = require('fs');
+                    fs.writeFileSync('last_signed_contract.pdf', pdfBuffer);
+                    console.log(`[Signature] PDF Generated and saved locally as last_signed_contract.pdf`);
+                }
+                
+                // Send the PDF to the WhatsApp Group
+                if (config.SMALL_LOANS_GROUP_ID && pdfBuffer) {
+                    console.log(`[Signature] Sending PDF to WhatsApp group...`);
+                    const base64Pdf = pdfBuffer.toString('base64');
+                    const fileName = `Contract_${name.replace(/\s+/g, '_')}_${idNumber}.pdf`;
+                    await ultraMsgService.sendDocument(config.SMALL_LOANS_GROUP_ID, fileName, base64Pdf, `📄 חוזה חתום: ${name}`);
+                }
+            } catch (e) {
+                console.error("[Signature] Failed to generate or send PDF to WhatsApp:", e.message);
+            }
+        }
+
+        res.status(200).json({ success: true });
+    } else {
+        res.status(404).json({ error: 'Session not found' });
+    }
+});
 
 const processedMsgIds = new Set();
 
@@ -161,8 +289,44 @@ app.post('/webhook', async (req, res) => {
 
                 // Send response via UltraMsg
                 if (result.response) {
-                    console.log(`[Webhook] Sending response to ${chatId}...`);
-                    await ultraMsgService.sendMessage(chatId, result.response);
+                    let finalResponse = result.response;
+
+                    // Replace Signature Link Placeholder
+                    if (finalResponse.includes('{{SIGN_LINK}}')) {
+                        const signLink = `${config.BASE_URL}/sign/${chatId}`;
+                        finalResponse = finalResponse.replace('{{SIGN_LINK}}', signLink);
+                        console.log(`[Webhook] Injected signature link for ${chatId}: ${signLink}`);
+                    }
+
+                    // Check for agreement marker
+                    if (finalResponse.includes('|||send_agreement|||')) {
+                        console.log(`[Webhook] Agreement marker detected for ${chatId}`);
+                        finalResponse = finalResponse.replace('|||send_agreement|||', '').trim();
+
+                        // Send text first (if any left after stripping marker)
+                        if (finalResponse) {
+                            console.log(`[Webhook] Sending preamble to ${chatId}...`);
+                            await ultraMsgService.sendMessage(chatId, finalResponse);
+                        }
+
+                        // Send agreement document
+                        const fs = require('fs');
+                        const path = require('path');
+                        const agreementPath = path.join(__dirname, 'agreement.docx');
+
+                        if (fs.existsSync(agreementPath)) {
+                            console.log(`[Webhook] Sending agreement.docx to ${chatId}...`);
+                            const base64Doc = fs.readFileSync(agreementPath).toString('base64');
+                            await ultraMsgService.sendDocument(chatId, 'agreement.docx', base64Doc, "הסכם התקשרות - אדמתנו");
+                        } else {
+                            console.error(`[Webhook] agreement.docx NOT FOUND at ${agreementPath}`);
+                            await ultraMsgService.sendMessage(chatId, "מצטערת, חלה שגיאה בשליחת הקובץ. אנא המתן רגע.");
+                        }
+                    } else {
+                        console.log(`[Webhook] Sending response to ${chatId}...`);
+                        await ultraMsgService.sendMessage(chatId, finalResponse);
+                    }
+
                     // Update last bot message time for reminder logic
                     session.lastBotMessageTime = Date.now();
                     saveSessions();

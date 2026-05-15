@@ -7,11 +7,7 @@ const sendMessage = async (chatId, message) => {
         return;
     }
 
-    // UltraMsg expects simple numbers for 'to', or chatId with @c.us for groups/contacts
-    // But usually for WhatsApp numbers, just the number is fine.
-    // However, to be safe and consistent with our previous logic:
-    const to = chatId.includes('@') ? chatId : chatId;
-
+    const to = chatId;
     const url = `${config.ULTRAMSG_API_URL}messages/chat`;
 
     try {
@@ -21,15 +17,12 @@ const sendMessage = async (chatId, message) => {
             body: message
         });
 
-        console.log(`[UltraMsg] Sending to ${to} via ${url}...`);
+        console.log(`[UltraMsg] Sending message to ${to}...`);
         const response = await axios.post(url, data, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            timeout: 10000 // 10 second timeout
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            timeout: 10000
         });
 
-        console.log(`[UltraMsg] Message sent to ${to}:`, response.data);
         return response.data;
     } catch (error) {
         console.error('[UltraMsg] Error sending message:', error.response ? error.response.data : error.message);
@@ -37,6 +30,39 @@ const sendMessage = async (chatId, message) => {
     }
 };
 
+const sendDocument = async (chatId, filename, document, caption = "") => {
+    if (!chatId || !filename || !document) {
+        console.error('sendDocument: chatId, filename, and document are required');
+        return;
+    }
+
+    const to = chatId;
+    const url = `${config.ULTRAMSG_API_URL}messages/document`;
+
+    try {
+        const data = new URLSearchParams({
+            token: config.ULTRAMSG_TOKEN,
+            to: to,
+            filename: filename,
+            document: document, // Can be URL or Base64
+            caption: caption
+        });
+
+        console.log(`[UltraMsg] Sending document ${filename} to ${to}...`);
+        const response = await axios.post(url, data, {
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            timeout: 20000 // Longer timeout for files
+        });
+
+        console.log(`[UltraMsg] Document sent to ${to}:`, response.data);
+        return response.data;
+    } catch (error) {
+        console.error('[UltraMsg] Error sending document:', error.response ? error.response.data : error.message);
+        throw error;
+    }
+};
+
 module.exports = {
-    sendMessage
+    sendMessage,
+    sendDocument
 };
