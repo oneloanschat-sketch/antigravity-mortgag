@@ -83,7 +83,7 @@ async function processMessage(session, userMessage) {
     if (leadSummary) {
         console.log(`[Agent] valid JSON found! lead_type=${leadSummary.lead_type || 'mortgage'}`);
 
-        // --- הלוואה קטנה: שלח לקבוצת "אדמתנו 🔥 הלוואות קטנות 🔥" ---
+        // --- הלוואה קטנה: שלח לקבוצת "טיקטק 🔥 הלוואות קטנות 🔥" ---
         if (leadSummary.lead_type === 'small_loan') {
             if (!session.leadSent && config.SMALL_LOANS_GROUP_ID) {
                 const fullNameKey = Object.keys(leadSummary).find(k => k.includes('name') || k.includes('שם'));
