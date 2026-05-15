@@ -20,10 +20,9 @@ const getContractHtml = (name, id, date, time, sigImage) => {
     <body>
         <div class="paper">
             <div class="header">
-                <p style="margin: 0 0 10px; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">חתימה דיגיטלית</p>
                 <h1>אדמתנו ביתנו בע"מ</h1>
-                <p style="margin-top: 5px; font-weight: 600; color: #1e3a8a;">משכנתאות I הלוואות I פתרונות מימון לעסקים</p>
-                <h3 style="margin-top: 20px; text-decoration: underline;">הנדון: הסכם התקשרות</h3>
+                <p style="margin: 2px 0 0; font-weight: 600; color: #1e3a8a; font-size: 13px;">משכנתאות I הלוואות I פתרונות מימון לעסקים</p>
+                <p style="margin: 8px 0 0; font-weight: 700; text-decoration: underline; font-size: 14px;">הנדון: הסכם התקשרות</p>
             </div>
 
             <div class="meta">
@@ -44,6 +43,7 @@ const getContractHtml = (name, id, date, time, sigImage) => {
             <div class="signature-box">
                 <strong>חתימת הלקוח/ה:</strong><br>
                 <img src="${sigImage}" class="signature-img" alt="Signature">
+                <p style="font-size: 10px; color: #94a3b8; margin-top: 5px;">חתימה דיגיטלית</p>
             </div>
         </div>
     </body>
