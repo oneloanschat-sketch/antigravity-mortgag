@@ -35,6 +35,44 @@ function saveSessions() {
 
 // Digital Signature Routes
 app.get('/sign/:chatId', (req, res) => {
+    const { chatId } = req.params;
+    const session = sessions[chatId];
+
+    // Feature: Prevent double signing
+    if (session && session.agreementSigned) {
+        return res.send(`
+            <!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
+            <style>body{font-family:'Assistant',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#fff;text-align:center;padding:20px;}
+            .box{max-width:400px;}.icon{font-size:80px;color:#22c55e;margin-bottom:10px;}
+            h1{color:#1e3a8a;font-size:22px;}p{color:#475569;font-size:15px;}</style></head>
+            <body><div class="box"><div class="icon">✓</div>
+            <h1>כבר חתמת בהצלחה!</h1>
+            <p>אנחנו מטפלים בבקשה שלך ונחזור אליך תוך 48 שעות.</p>
+            </div></body></html>
+        `);
+    }
+
+    // Feature: Link expiration (48 hours)
+    if (session && session.signLinkSentAt) {
+        const FORTY_EIGHT_HOURS = 48 * 60 * 60 * 1000;
+        if (Date.now() - session.signLinkSentAt > FORTY_EIGHT_HOURS) {
+            return res.send(`
+                <!DOCTYPE html><html lang="he" dir="rtl"><head><meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;700&display=swap" rel="stylesheet">
+                <style>body{font-family:'Assistant',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#fff;text-align:center;padding:20px;}
+                .box{max-width:400px;}.icon{font-size:80px;color:#f59e0b;margin-bottom:10px;}
+                h1{color:#1e3a8a;font-size:22px;}p{color:#475569;font-size:15px;}</style></head>
+                <body><div class="box"><div class="icon">⏰</div>
+                <h1>הלינק פג תוקף</h1>
+                <p>לינק החתימה תקף ל-48 שעות בלבד. פנה/י לנציג בוואטסאפ לקבלת לינק חדש.</p>
+                </div></body></html>
+            `);
+        }
+    }
+
     res.sendFile(path.join(__dirname, 'public', 'signature.html'));
 });
 
@@ -81,9 +119,15 @@ app.post('/api/sign', async (req, res) => {
     const { chatId, signature, name, idNumber, userAgent } = req.body;
     console.log(`[Signature] Received signature for ${chatId}`);
 
-    if (sessions[chatId] || chatId === 'test_user') {
-        // For testing purposes, create a dummy session for test_user if it doesn't exist
-        if (chatId === 'test_user' && !sessions[chatId]) {
+    // Feature: Prevent double signing via API
+    if (sessions[chatId] && sessions[chatId].agreementSigned) {
+        console.log(`[Signature] Client ${chatId} already signed. Rejecting duplicate.`);
+        return res.status(400).json({ error: 'Already signed' });
+    }
+
+    if (sessions[chatId] || chatId === 'test_user' || chatId === 'test') {
+        // For testing purposes, create a dummy session if it doesn't exist
+        if ((chatId === 'test_user' || chatId === 'test') && !sessions[chatId]) {
             sessions[chatId] = {
                 history: [],
                 data: { full_name: 'לקוח בדיקה' },
@@ -293,6 +337,9 @@ app.post('/webhook', async (req, res) => {
                     const signLink = `${config.BASE_URL}/sign/${chatId}`;
                     if (finalResponse.includes('{{SIGN_LINK}}')) {
                         finalResponse = finalResponse.replace('{{SIGN_LINK}}', signLink);
+                        // Mark timestamp for link expiration & reminder logic
+                        session.signLinkSentAt = Date.now();
+                        session.signReminderSent = false;
                         console.log(`[Webhook] Injected signature link for ${chatId}: ${signLink}`);
                     }
                     
@@ -370,17 +417,36 @@ app.listen(config.PORT, () => {
 setInterval(async () => {
     console.log('[Reminder] Checking for idle sessions...');
     const now = Date.now();
+    const TWO_HOURS = 2 * 60 * 60 * 1000;
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
     const TWO_WEEKS = 14 * 24 * 60 * 60 * 1000;
 
     for (const chatId in sessions) {
         const session = sessions[chatId];
 
-        // Check if session qualifies for a reminder:
-        // 1. Not completed
-        // 2. Reminder not yet sent
-        // 3. Has history and last message was from bot (assistant)
-        // 4. Last bot message was between 24h and 14 days ago
+        // --- Feature: Signature Reminder (2 hours after link sent, not signed) ---
+        if (
+            session.signLinkSentAt &&
+            !session.agreementSigned &&
+            !session.signReminderSent &&
+            (now - session.signLinkSentAt) > TWO_HOURS
+        ) {
+            console.log(`[Reminder] Sending signature reminder to ${chatId}`);
+            const signLink = `${config.BASE_URL}/sign/${chatId}`;
+            const signReminderMsg = `היי, שמתי לב שעוד לא הספקת להשלים את האישור הדיגיטלי 😊 הנה הלינק שוב כדי שנוכל להתקדם: ${signLink}`;
+
+            try {
+                await ultraMsgService.sendMessage(chatId, signReminderMsg);
+                session.signReminderSent = true;
+                session.history.push({ role: 'assistant', content: signReminderMsg });
+                session.lastBotMessageTime = Date.now();
+                saveSessions();
+            } catch (err) {
+                console.error(`[Reminder] Failed to send signature reminder to ${chatId}:`, err.message);
+            }
+        }
+
+        // --- Original: General idle reminder (24 hours) ---
         if (
             !session.completed &&
             !session.reminderSent &&
@@ -397,9 +463,8 @@ setInterval(async () => {
             try {
                 await ultraMsgService.sendMessage(chatId, reminderMsg);
                 session.reminderSent = true;
-                // Add to history so AI has context if user replies
                 session.history.push({ role: 'assistant', content: reminderMsg });
-                session.lastBotMessageTime = Date.now(); // Update time to prevent immediate double-reminders (though flag handles it)
+                session.lastBotMessageTime = Date.now();
                 saveSessions();
             } catch (err) {
                 console.error(`[Reminder] Failed to send to ${chatId}:`, err.message);
