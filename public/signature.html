@@ -27,7 +27,7 @@
             background-color: var(--bg-body);
             color: var(--text-main);
             margin: 0;
-            padding: 15px;
+            padding: 10px; /* Reduced from 15px */
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -35,49 +35,50 @@
 
         .document-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 700px; /* Reduced from 800px */
             background: #ffffff;
-            padding: 40px;
+            padding: 15px; /* Reduced from 25px */
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             position: relative;
             animation: slideUp 0.5s ease-out;
+            margin: auto;
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
         .doc-header {
             text-align: center;
             border-bottom: 2px solid var(--primary);
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            padding-bottom: 5px; /* Reduced from 10px */
+            margin-bottom: 10px; /* Reduced from 15px */
         }
 
         .doc-header h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 18px; /* Reduced from 20px */
             color: var(--primary);
             letter-spacing: 1px;
         }
 
         .doc-header p {
-            margin: 10px 0 0;
+            margin: 2px 0 0;
             color: var(--text-muted);
-            font-size: 14px;
+            font-size: 12px; /* Reduced from 13px */
         }
 
         .legal-metadata {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px; /* Reduced from 15px */
             background: #f8fafc;
-            padding: 15px;
+            padding: 6px 12px; /* Reduced padding */
             border-radius: 6px;
-            font-size: 13px;
+            font-size: 11px; /* Reduced from 12px */
             color: var(--text-muted);
             border: 1px solid var(--border-color);
         }
@@ -88,26 +89,29 @@
         }
 
         .user-inputs {
-            margin-bottom: 30px;
+            margin-bottom: 10px; /* Reduced from 15px */
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Name and ID side-by-side on desktop */
+            gap: 10px;
         }
 
         .input-group {
-            margin-bottom: 15px;
+            margin-bottom: 5px;
         }
 
         .input-group label {
             display: block;
             font-weight: 600;
-            margin-bottom: 5px;
-            font-size: 14px;
+            margin-bottom: 2px;
+            font-size: 12px; /* Reduced from 13px */
         }
 
         .input-group input {
             width: 100%;
-            padding: 12px;
+            padding: 8px; /* Reduced from 10px */
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            font-size: 16px;
+            font-size: 14px; /* Reduced from 15px */
             font-family: inherit;
         }
 
@@ -117,31 +121,32 @@
         }
 
         .agreement-content {
-            font-size: 16px;
-            line-height: 1.8;
+            font-size: 12px; /* Reduced from 13px */
+            line-height: 1.4; /* Reduced from 1.6 */
             text-align: right;
             unicode-bidi: plaintext;
-            margin-bottom: 40px;
-            max-height: 250px;
+            margin-bottom: 10px; /* Reduced from 15px */
+            max-height: 80px; /* Reduced from 110px */
             overflow-y: auto;
-            padding-left: 15px;
-            border-right: 4px solid var(--primary-light);
-            padding-right: 15px;
+            padding-left: 10px;
+            border-right: 3px solid var(--primary-light);
+            padding-right: 10px;
             white-space: pre-wrap;
+            background: #fdfdfd;
         }
 
-        .agreement-content::-webkit-scrollbar { width: 5px; }
-        .agreement-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 5px; }
+        .agreement-content::-webkit-scrollbar { width: 4px; }
+        .agreement-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
         .signature-area {
-            margin-top: 30px;
+            margin-top: 5px; /* Reduced from 15px */
         }
 
         .signature-canvas-box {
             width: 100%;
-            height: 180px;
-            background: #fdfdfd;
-            border: 1px solid #94a3b8;
+            height: 90px; /* Reduced from 110px */
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
             border-radius: 4px;
             position: relative;
             cursor: crosshair;
@@ -157,7 +162,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 10px;
+            margin-top: 3px;
         }
 
         .clear-btn {
@@ -165,8 +170,9 @@
             border: none;
             color: var(--primary-light);
             cursor: pointer;
-            font-size: 13px;
+            font-size: 11px;
             font-weight: 600;
+            padding: 2px 0;
         }
 
         .submit-btn {
@@ -174,13 +180,14 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 18px;
+            padding: 12px; /* Reduced from 14px */
             border-radius: 6px;
-            font-size: 18px;
+            font-size: 16px; /* Reduced from 17px */
             font-weight: 700;
             cursor: pointer;
-            margin-top: 30px;
+            margin-top: 10px; /* Reduced from 15px */
             transition: background 0.3s;
+            box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.2);
         }
 
         .submit-btn:hover { background: var(--primary-dark); }
@@ -196,12 +203,15 @@
             justify-content: center;
             align-items: center;
             text-align: center;
+            padding: 20px;
         }
 
         @media (max-width: 600px) {
-            .document-container { padding: 20px; }
-            .legal-metadata { grid-template-columns: 1fr; }
-            .doc-header h1 { font-size: 20px; }
+            .document-container { padding: 15px; border-radius: 0; box-shadow: none; }
+            .legal-metadata { padding: 8px; font-size: 11px; }
+            .doc-header h1 { font-size: 18px; }
+            .agreement-content { max-height: 90px; font-size: 12px; }
+            .submit-btn { padding: 16px; font-size: 18px; position: sticky; bottom: 0; }
         }
     </style>
 </head>

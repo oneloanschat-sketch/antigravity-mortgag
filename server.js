@@ -122,9 +122,7 @@ app.post('/api/sign', async (req, res) => {
                     const pushName = name || session.data?.full_name || 'לקוח';
                     const cleanPhone = chatId.split('@')[0].replace(/\D/g, '');
                     const waLink = `https://wa.me/${cleanPhone}`;
-                    const viewLink = `${config.BASE_URL}/view-contract/${chatId}`;
-                    
-                    await ultraMsgService.sendMessage(config.SMALL_LOANS_GROUP_ID, `✍️ *הסכם נחתם דיגיטלית!* ✍️\n\n*לקוח*: ${pushName}\n*ת.ז*: ${idNumber || "---"}\n*טלפון*: ${waLink}\n\n📄 *לצפייה בהסכם החתום והדפסה*:\n${viewLink}`);
+                    await ultraMsgService.sendMessage(config.SMALL_LOANS_GROUP_ID, `✍️ *הסכם נחתם דיגיטלית!* ✍️\n\n*לקוח*: ${pushName}\n*ת.ז*: ${idNumber || "---"}\n*טלפון*: ${waLink}`);
                 }
             } catch (e) {
                 console.error("[Signature] Failed to notify group via WhatsApp:", e.message);
