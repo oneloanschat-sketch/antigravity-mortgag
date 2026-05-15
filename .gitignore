@@ -6,3 +6,5 @@ webhook_debug.log
 .DS_Store
 *.pdf
 generate_sample.js
+*.docx
+agreement.docx
