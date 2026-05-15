@@ -11,7 +11,7 @@
             --primary: #1e3a8a;
             --primary-dark: #1e40af;
             --primary-light: #3b82f6;
-            --bg-body: #f1f5f9;
+            --bg-body: #ffffff;
             --text-main: #0f172a;
             --text-muted: #475569;
             --border-color: #e2e8f0;
@@ -24,10 +24,10 @@
 
         body {
             font-family: 'Assistant', sans-serif;
-            background-color: var(--bg-body);
+            background-color: #ffffff;
             color: var(--text-main);
             margin: 0;
-            padding: 10px; /* Reduced from 15px */
+            padding: 10px;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -35,11 +35,11 @@
 
         .document-container {
             width: 100%;
-            max-width: 700px; /* Reduced from 800px */
+            max-width: 700px;
             background: #ffffff;
-            padding: 15px; /* Reduced from 25px */
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+            padding: 10px;
+            box-shadow: none;
+            border-radius: 0;
             position: relative;
             animation: slideUp 0.5s ease-out;
             margin: auto;
@@ -53,13 +53,13 @@
         .doc-header {
             text-align: center;
             border-bottom: 2px solid var(--primary);
-            padding-bottom: 5px; /* Reduced from 10px */
-            margin-bottom: 10px; /* Reduced from 15px */
+            padding-bottom: 5px;
+            margin-bottom: 10px;
         }
 
         .doc-header h1 {
-            margin: 0;
-            font-size: 18px; /* Reduced from 20px */
+            margin: 2px 0;
+            font-size: 18px;
             color: var(--primary);
             letter-spacing: 1px;
         }
@@ -67,18 +67,18 @@
         .doc-header p {
             margin: 2px 0 0;
             color: var(--text-muted);
-            font-size: 12px; /* Reduced from 13px */
+            font-size: 12px;
         }
 
         .legal-metadata {
             display: flex;
             justify-content: space-between;
             gap: 10px;
-            margin-bottom: 10px; /* Reduced from 15px */
+            margin-bottom: 10px;
             background: #f8fafc;
-            padding: 6px 12px; /* Reduced padding */
+            padding: 6px 12px;
             border-radius: 6px;
-            font-size: 11px; /* Reduced from 12px */
+            font-size: 11px;
             color: var(--text-muted);
             border: 1px solid var(--border-color);
         }
@@ -89,9 +89,9 @@
         }
 
         .user-inputs {
-            margin-bottom: 5px; /* Reduced from 10px */
+            margin-bottom: 5px;
             display: grid;
-            grid-template-columns: 1fr 1fr; /* Name and ID side-by-side on desktop */
+            grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
 
@@ -103,15 +103,15 @@
             display: block;
             font-weight: 600;
             margin-bottom: 2px;
-            font-size: 12px; /* Reduced from 13px */
+            font-size: 12px;
         }
 
         .input-group input {
             width: 100%;
-            padding: 8px; /* Reduced from 10px */
+            padding: 8px;
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            font-size: 14px; /* Reduced from 15px */
+            font-size: 14px;
             font-family: inherit;
         }
 
@@ -121,12 +121,12 @@
         }
 
         .agreement-content {
-            font-size: 12px; /* Reduced from 13px */
-            line-height: 1.4; /* Reduced from 1.6 */
+            font-size: 12px;
+            line-height: 1.4;
             text-align: right;
             unicode-bidi: plaintext;
-            margin-bottom: 10px; /* Reduced from 15px */
-            max-height: 120px; /* Increased from 60px as requested */
+            margin-bottom: 10px;
+            max-height: 120px;
             overflow-y: auto;
             padding-left: 10px;
             border-right: 3px solid var(--primary-light);
@@ -139,12 +139,12 @@
         .agreement-content::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
         .signature-area {
-            margin-top: 5px; /* Reduced from 15px */
+            margin-top: 5px;
         }
 
         .signature-canvas-box {
             width: 100%;
-            height: 80px; /* Reduced from 90px */
+            height: 90px;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 4px;
@@ -180,12 +180,12 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 12px; /* Reduced from 14px */
+            padding: 12px;
             border-radius: 6px;
-            font-size: 16px; /* Reduced from 17px */
+            font-size: 16px;
             font-weight: 700;
             cursor: pointer;
-            margin-top: 10px; /* Reduced from 15px */
+            margin-top: 10px;
             transition: background 0.3s;
             box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.2);
         }
@@ -207,11 +207,12 @@
         }
 
         @media (max-width: 600px) {
-            .document-container { padding: 15px; border-radius: 0; box-shadow: none; }
+            .document-container { padding: 10px; border-radius: 0; box-shadow: none; }
             .legal-metadata { padding: 8px; font-size: 11px; }
             .doc-header h1 { font-size: 18px; }
             .agreement-content { max-height: 90px; font-size: 12px; }
             .submit-btn { padding: 16px; font-size: 18px; position: sticky; bottom: 0; }
+            .user-inputs { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -219,7 +220,6 @@
 
 <div class="document-container" id="mainDoc">
     <div class="doc-header">
-        <p style="margin: 0; color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;">חתימה דיגיטלית</p>
         <h1 style="margin: 2px 0; font-size: 18px;">אדמתנו ביתנו בע"מ</h1>
         <p style="margin: 0; font-weight: 600; color: var(--primary); font-size: 12px;">משכנתאות I הלוואות I פתרונות מימון לעסקים</p>
         <p style="margin: 5px 0 0; font-weight: 700; text-decoration: underline; color: var(--text-main); font-size: 13px;">הנדון: הסכם התקשרות</p>
@@ -248,13 +248,13 @@
 5. חתימתי באמצעי דיגיטלי זה מחייבת אותי לכל דבר ועניין ומהווה הסכמה מלאה לכל תנאי ההתקשרות לעיל.</div>
 
     <div class="signature-area">
-        <label style="font-weight: 700; margin-bottom: 10px; display: block;">חתימת הלקוח/ה:</label>
+        <label style="font-weight: 700; margin-bottom: 5px; display: block; font-size: 12px;">חתימת הלקוח/ה:</label>
         <div class="signature-canvas-box">
             <canvas id="signature-pad"></canvas>
         </div>
         <div class="signature-footer">
             <button class="clear-btn" id="clearBtn">נקה חתימה</button>
-            <span style="font-size: 11px; color: #94a3b8;">חתימה אלקטרונית מאובטחת</span>
+            <span style="font-size: 10px; color: #94a3b8;">חתימה דיגיטלית</span>
         </div>
     </div>
 
