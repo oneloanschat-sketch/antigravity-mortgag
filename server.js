@@ -292,10 +292,17 @@ app.post('/webhook', async (req, res) => {
                     let finalResponse = result.response;
 
                     // Replace Signature Link Placeholder
+                    const signLink = `${config.BASE_URL}/sign/${chatId}`;
                     if (finalResponse.includes('{{SIGN_LINK}}')) {
-                        const signLink = `${config.BASE_URL}/sign/${chatId}`;
                         finalResponse = finalResponse.replace('{{SIGN_LINK}}', signLink);
                         console.log(`[Webhook] Injected signature link for ${chatId}: ${signLink}`);
+                    }
+                    
+                    // Regex safeguard: Catch hallucinated links (e.g. tiktak-mortgages.com/sign/...)
+                    const linkRegex = /https?:\/\/[^\s]+\/sign\/[^\s]+/gi;
+                    if (linkRegex.test(finalResponse)) {
+                        console.log(`[Webhook] Hallucinated link detected. Overriding with correct one.`);
+                        finalResponse = finalResponse.replace(linkRegex, signLink);
                     }
 
                     // Check for agreement marker
