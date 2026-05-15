@@ -190,6 +190,13 @@ app.post('/api/sign', async (req, res) => {
                     const fileName = `Contract_${name.replace(/\s+/g, '_')}_${idNumber}.pdf`;
                     await ultraMsgService.sendDocument(config.SMALL_LOANS_GROUP_ID, fileName, base64Pdf, `📄 חוזה חתום: ${name}`);
                 }
+
+                // Cleanup: Remove heavy signature data from session to save memory
+                if (session.signatureData) {
+                    delete session.signatureData;
+                    console.log(`[Signature] Cleaned up signatureData from session for ${chatId}`);
+                    saveSessions();
+                }
             } catch (e) {
                 console.error("[Signature] Failed to generate or send PDF to WhatsApp:", e.message);
             }
