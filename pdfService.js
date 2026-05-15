@@ -2,8 +2,8 @@ const html_to_pdf = require('html-pdf-node');
 const { getContractHtml } = require('./contractTemplate');
 
 const generateContractPdf = async (clientName, clientId, signatureData) => {
-    const date = new Date().toLocaleDateString('he-IL');
-    const time = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+    const date = new Date().toLocaleDateString('he-IL', { timeZone: 'Asia/Jerusalem' });
+    const time = new Date().toLocaleTimeString('he-IL', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
 
     // Generate HTML for PDF using the shared template
     const contractHtml = getContractHtml(clientName, clientId, date, time, signatureData);
